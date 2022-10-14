@@ -15,6 +15,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.firefox.options import Options
 
+from pymongo import MongoClient
+
+CLIENT = MongoClient()
+MY_DTB = CLIENT['soccer_analysis']
+MY_COL = MY_DTB['matchs']
+
 FS_URL = 'https://www.flashscore.fr'
 CUR_OUT_PATH = '\\'.join(os.path.realpath(__file__).split('\\')[:-1]) + '\\output'
 
@@ -34,13 +40,19 @@ class FlashScoreScraper:
         url_res_league: str,
         options: Options,
         exec_path: Any,
+        export_to_yaml: bool,
+        export_to_dtb: bool,
         ) -> None:
 
         self.driver = webdriver.Firefox(
             options=options, 
             executable_path=Path(exec_path)
             )
+        self.url_res_league = url_res_league
         self.driver.get(url_res_league)
+        self.season = (re.search('\d{4}-\d{4}', url_res_league)[0] if re.search('\d{4}-\d{4}', url_res_league) else 'Not_found')
+        self.export_yaml = export_to_yaml
+        self.export_dtb = export_to_dtb
         self.extend_whole_page()
 
     def extend_whole_page(self):
@@ -93,18 +105,27 @@ class FlashScoreScraper:
             ]
         matchs_urls = list(map(list, list(zip(*matchs_urls))))
 
+        print(f'Scraping of {self.url_res_league}')
         for idx in tqdm(range(len(matchs_urls)), ncols=100, desc='Scraping in progress'):
-            match_data = self.parse_match(matchs_urls[idx])
-            self.export_data(match_data, id_list[idx])
+            match_data = self.parse_match(matchs_urls[idx], id_list[idx])
+            
+            if self.export_yaml:
+                self.export_to_yaml(match_data, id_list[idx])
+
+            if self.export_dtb:
+                self.export_to_dtb(match_data)
 
         self.driver.close()
 
     def parse_match(
         self, 
         match_urls: str,
+        match_id: str,
         ) -> Dict:
 
         match_data = {}
+        match_data['saison'] = self.season
+        match_data['id'] = match_id
 
         self.driver.get(match_urls[0])
         time.sleep(1)
@@ -559,26 +580,39 @@ class FlashScoreScraper:
             for i in range(len(last_duel_list)//6)
             ]
 
-    def export_data(
+    def export_to_yaml(
         self, 
         data: Dict,
-        id
+        id: str,
         ) -> None:
 
         with open(CUR_OUT_PATH + f'\\{id}.yaml', 'w') as f:
             yaml.dump(data, f, sort_keys=False)
 
+    def export_to_dtb(
+        self,
+        data: Dict,
+        ) -> None:
+        
+        MY_COL.insert_one(data)
+
 
 if __name__ == '__main__':
 
-    url_league = 'https://www.flashscore.fr/football/france/ligue-1-2021-2022/resultats/'
+    years = [(2021-i, 2022-i) for i in range(10)]
+    url_leagues = ['https://www.flashscore.fr/football/france/ligue-1-'+ str(year[0]) + '-' + str(year[1]) + '/resultats/' for year in years]
     opts = Options()
-    opts.headless = False
+    opts.headless = True
     exec_path = 'D:\\Documents\\15_Outils\\geckodriver.exe'
+    export_to_yaml = False
+    export_to_dtb = True
 
-    scraper = FlashScoreScraper(
-        url_league,
-        opts, 
-        exec_path,
-        )
-    scraper.parse_matchs()
+    for url_league in url_leagues:
+        scraper = FlashScoreScraper(
+            url_league,
+            opts, 
+            exec_path,
+            export_to_yaml,
+            export_to_dtb,
+            )
+        scraper.parse_matchs()
