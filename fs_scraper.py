@@ -13,7 +13,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 from pymongo import MongoClient
 
@@ -39,21 +41,21 @@ class FlashScoreScraper:
         self,
         url_res_league: str,
         options: Options,
-        exec_path: Any,
+        service: Service,
         export_to_yaml: bool,
         export_to_dtb: bool,
         ) -> None:
 
-        self.driver = webdriver.Firefox(
+        self.driver = webdriver.Chrome(
             options=options, 
-            executable_path=Path(exec_path)
+            service=service
             )
         self.url_res_league = url_res_league
         self.driver.get(url_res_league)
         self.season = (re.search('\d{4}-\d{4}', url_res_league)[0] if re.search('\d{4}-\d{4}', url_res_league) else 'Not_found')
         self.export_yaml = export_to_yaml
         self.export_dtb = export_to_dtb
-        self.extend_whole_page()
+        # self.extend_whole_page()
 
     def extend_whole_page(self):
         xpath = "//a[@class='event__more event__more--static']"
@@ -270,7 +272,6 @@ class FlashScoreScraper:
         except IndexError as e:
             logging.info(e)
             logging.info(f'Error: info_box_list: {info_box_list}')
-            # print(f'Error: info_box_list: {info_box_list}')
             return None        
 
     def scrape_match_resume_page(
@@ -599,11 +600,10 @@ class FlashScoreScraper:
 
 if __name__ == '__main__':
 
-    years = [(2021-i, 2022-i) for i in range(10)]
+    years = [(2017-i, 2018-i) for i in range(1)]
     url_leagues = ['https://www.flashscore.fr/football/france/ligue-1-'+ str(year[0]) + '-' + str(year[1]) + '/resultats/' for year in years]
     opts = Options()
-    opts.headless = True
-    exec_path = 'D:\\Documents\\15_Outils\\geckodriver.exe'
+    service = Service(executable_path=ChromeDriverManager().install())
     export_to_yaml = False
     export_to_dtb = True
 
@@ -611,8 +611,9 @@ if __name__ == '__main__':
         scraper = FlashScoreScraper(
             url_league,
             opts, 
-            exec_path,
+            service,
             export_to_yaml,
             export_to_dtb,
             )
+        time.sleep(20)
         scraper.parse_matchs()
