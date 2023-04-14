@@ -52,7 +52,7 @@ class FlashScoreScraper:
             )
         self.url_res_league = url_res_league
         self.driver.get(url_res_league)
-        self.season = (re.search('\d{4}-\d{4}', url_res_league)[0] if re.search('\d{4}-\d{4}', url_res_league) else 'Not_found')
+        self.season = (re.search('\d{4}-\d{4}', url_res_league)[0] if re.search('\d{4}-\d{4}', url_res_league) else None)
         self.export_yaml = export_to_yaml
         self.export_dtb = export_to_dtb
         # self.extend_whole_page()
@@ -192,14 +192,13 @@ class FlashScoreScraper:
             research_country = re.search('^.*(?=:.*)', context_list[0].text)
             research_league = re.search('(?<=: ).*(?= -)', context_list[0].text)
             research_round = re.search('(?<= - ).*$', context_list[0].text)
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: context_list: {context_list[0]}')
-            # print(f'Error: context_list: {context_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: context_list: {context_list[0]}')
 
-        country = (unidecode(research_country[0]).lower() if research_country else 'Not_found')
-        league = (unidecode(research_league[0]).lower() if research_league else 'Not_found')
-        round = (unidecode(research_round[0]).lower() if research_round else 'Not_found')
+        country = (unidecode(research_country[0]).lower() if research_country else None)
+        league = (unidecode(research_league[0]).lower() if research_league else None)
+        round = (unidecode(research_round[0]).lower() if research_round else None)
 
         return country, league, round
 
@@ -209,10 +208,11 @@ class FlashScoreScraper:
 
         try:
             start_day, start_hour = start_time_list[0].text.split(' ')
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: start_time_list: {start_time_list[0]}')
-            # print(f'Error: start_time_list: {start_time_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: start_time_list: {start_time_list[0]}')
+            start_day = None
+            start_hour = None
 
         return start_day, start_hour
 
@@ -225,10 +225,11 @@ class FlashScoreScraper:
                 unidecode(team_name_list[0].text).lower(), 
                 unidecode(team_name_list[1].text).lower()
                 )
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: team_name_list: {team_name_list}')
-            # print(f'Error: team_name_list: {team_name_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: team_name_list: {team_name_list}')
+            home_team_name = None
+            away_team_name = None
 
         return home_team_name, away_team_name
 
@@ -241,10 +242,11 @@ class FlashScoreScraper:
                 int, 
                 final_score_list[0].text.split('\n-\n')
                 ))
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: final_score_list: {final_score_list}')
-            # print(f'Error: final_score_list: {final_score_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: final_score_list: {final_score_list}')
+            home_team_goals = None
+            away_team_goal = None
 
         return home_team_goals, away_team_goal
 
@@ -254,10 +256,10 @@ class FlashScoreScraper:
 
         try:
             match_status = unidecode(match_status_list[0].text).lower()
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: match_status_list: {match_status_list}')
-            # print(f'Error: match_status_list: {match_status_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: match_status_list: {match_status_list}')
+            match_status = None
 
         return match_status
 
@@ -267,12 +269,13 @@ class FlashScoreScraper:
 
         try:
             info_box = unidecode(info_box_list[0].text).lower()
-            return info_box
 
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: info_box_list: {info_box_list}')
-            return None        
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: info_box_list: {info_box_list}')
+            info_box = None
+        
+        return info_box
 
     def scrape_match_resume_page(
         self,
@@ -307,15 +310,14 @@ class FlashScoreScraper:
                         'away_goal': int(goals[1]),
                         }
                     })
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: match_scores_list: {match_scores_list}')
-            # print(f'Error: match_scores_list: {match_scores_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: match_scores_list: {match_scores_list}')
+            goals_by_period = None
 
         return goals_by_period
 
     def scrape_events(self) -> List[Dict]:
-
         event_xpath = "//div[@class='smv__incident']"
         event_list = self.driver.find_elements(By.XPATH, event_xpath)
 
@@ -358,36 +360,36 @@ class FlashScoreScraper:
                         'sub_in': unidecode(event_elem[1]).lower(),
                         'sub_out': unidecode(event_elem[2]).lower(),
                         })
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: event_list: {event_list}')
-            # print(f'Error: event_list: {event_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: event_list: {event_list}')
+            events = None
 
         return events
 
     def scrape_infos_match(self) -> Tuple[str, str, str]:
-
         infos_match_xpath = "//div[@class='mi__data']"
         infos_match_list = self.driver.find_elements(By.XPATH, infos_match_xpath)
 
         try:
             infos_match = infos_match_list[0].text.split('\n')
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: infos_match_list: {infos_match_list}')
-            # print(f'Error: infos_match_list: {infos_match_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: infos_match_list: {infos_match_list}')
+            infos_match = None
 
         try:
             referee = unidecode(infos_match[1]).lower()
             stadium = unidecode(infos_match[3]).lower()
             spectators = int(infos_match[5].replace(' ', ''))
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: infos_match: {infos_match}')
-            # print(f'Error: infos_match: {infos_match}')
-            return referee, stadium
-        else:
-            return referee, stadium, spectators
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: infos_match: {infos_match}')
+            referee = None
+            stadium = None
+            spectators = None
+
+        return referee, stadium, spectators
 
     def scrape_match_stat_match_page(
         self,
@@ -399,119 +401,121 @@ class FlashScoreScraper:
 
         try:
             stats = stats_list[0].text.split('\n')
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: stats_list: {stats_list}')
-            # print(f'Error: stats_list: {stats_list}')
+            match_data['stats'] = {
+                unidecode(stats[3*i+1]).lower(): {'home_team': float(stats[3*i]), 'away_team': float(stats[3*i+2])} 
+                if stats[3*i].isdigit()
+                else {'home_team': float(stats[3*i][:-1]), 'away_team': float(stats[3*i+2][:-1])} 
+                for i in range(len(stats)//3)
+                }
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: stats_list: {stats_list}')
+            stats = None
 
-        match_data['stats'] = {
-            unidecode(stats[3*i+1]).lower(): {'home_team': float(stats[3*i]), 'away_team': float(stats[3*i+2])} 
-            if stats[3*i].isdigit()
-            else {'home_team': float(stats[3*i][:-1]), 'away_team': float(stats[3*i+2][:-1])} 
-            for i in range(len(stats)//3)
-            }
+
         
     def scrape_match_compo_page(
         self,
         match_data: Dict,
         ) -> None:
-
         formation_xpath = "//div[@class='lf__header section__title']"
         formation_list = self.driver.find_elements(By.XPATH, formation_xpath)
+
         try: 
             formations = formation_list[0].text.split('\n')
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: formation_list: {formation_list}')
-            # print(f'Error: formation_list: {formation_list}')
-        
-        match_data['home_formation'] = formations[0]
-        match_data['away_formation'] = formations[2]
+            match_data['home_formation'] = formations[0]
+            match_data['away_formation'] = formations[2]
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: formation_list: {formation_list}')
+            match_data['home_formation'] = None
+            match_data['away_formation'] = None
 
         compo_xpath = "//div[@class='lf__fieldWrap']"
         compo_list = self.driver.find_elements(By.XPATH, compo_xpath)
+
         try: 
             compos = compo_list[0].text.split('\n')
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: compo_list: {compo_list}')
-            # print(f'Error: compo_list: {compo_list}')
-
-        home_compo = compos[:len(compos)//2]
-        away_compo = compos[len(compos)//2:]
-        match_data['home_holders'] = [
-            {'name': unidecode(home_compo[2*i+1]).lower(), 'num': home_compo[2*i]}
-            for i in range(len(home_compo)//2)
-            ]
-        match_data['away_holders'] = [
-            {'name': unidecode(away_compo[2*i+1]).lower(), 'num': away_compo[2*i]}
-            for i in range(len(away_compo)//2)
-            ]
+            home_compo = compos[:len(compos)//2]
+            away_compo = compos[len(compos)//2:]
+            match_data['home_holders'] = [
+                {'name': unidecode(home_compo[2*i+1]).lower(), 'num': home_compo[2*i]}
+                for i in range(len(home_compo)//2)
+                ]
+            match_data['away_holders'] = [
+                {'name': unidecode(away_compo[2*i+1]).lower(), 'num': away_compo[2*i]}
+                for i in range(len(away_compo)//2)
+                ]
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: compo_list: {compo_list}')
+            match_data['home_holders'] = None
+            match_data['away_holders'] = None
 
         other_infos_xpath = "//div[@class='lf__side']"
         other_infos_list = self.driver.find_elements(By.XPATH, other_infos_xpath)
+
         try: 
             home_subs = list(filter(lambda x: not x.startswith('('), other_infos_list[2].text.split('\n')))
             away_subs = list(filter(lambda x: not x.startswith('('), other_infos_list[3].text.split('\n')))
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: other_infos_list: {other_infos_list}')
-            # print(f'Error: other_infos_list: {other_infos_list}')
-
-        match_data['home_subs'] = [
-            {'name': unidecode(home_subs[2*i+1]).lower(), 'num': home_subs[2*i]}
-            for i in range(len(home_subs)//2)
-            ]
-        match_data['away_subs'] = [
-            {'name': unidecode(away_subs[2*i+1]).lower(), 'num': away_subs[2*i]}
-            for i in range(len(away_subs)//2)
-            ]
+            match_data['home_subs'] = [
+                {'name': unidecode(home_subs[2*i+1]).lower(), 'num': home_subs[2*i]}
+                for i in range(len(home_subs)//2)
+                ]
+            match_data['away_subs'] = [
+                {'name': unidecode(away_subs[2*i+1]).lower(), 'num': away_subs[2*i]}
+                for i in range(len(away_subs)//2)
+                ]
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: other_infos_list: {other_infos_list}')
+            match_data['home_subs'] = None
+            match_data['away_subs'] = None
 
         try: 
             home_absent_list = list(filter(lambda x: not x.startswith('('), other_infos_list[4].text.split('\n')))
             away_absent_list = list(filter(lambda x: not x.startswith('('), other_infos_list[5].text.split('\n')))
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: other_infos_list: {other_infos_list}')
-            # print(f'Error: other_infos_list: {other_infos_list}')
-
-        if len(home_absent_list) > 0:
-            match_data['home_absents'] = [unidecode(home_absent_list[i]).lower() for i in range(len(home_absent_list))]
-        if len(away_absent_list) > 0:
-            match_data['away_absents'] = [unidecode(away_absent_list[i]).lower() for i in range(len(away_absent_list))]
+            if len(home_absent_list) > 0:
+                match_data['home_absents'] = [unidecode(home_absent_list[i]).lower() for i in range(len(home_absent_list))]
+            if len(away_absent_list) > 0:
+                match_data['away_absents'] = [unidecode(away_absent_list[i]).lower() for i in range(len(away_absent_list))]
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: other_infos_list: {other_infos_list}')
+            match_data['home_absents'] = None
+            match_data['away_absents'] = None
 
         try: 
             home_coach = other_infos_list[6].text
             away_coach = other_infos_list[7].text
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: other_infos_list: {other_infos_list}')
-            # print(f'Error: other_infos_list: {other_infos_list}')
-
-        match_data['home_coach'] = unidecode(home_coach).lower()
-        match_data['away_coach'] = unidecode(away_coach).lower()
+            match_data['home_coach'] = unidecode(home_coach).lower()
+            match_data['away_coach'] = unidecode(away_coach).lower()
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: other_infos_list: {other_infos_list}')
+            match_data['home_coach'] = None
+            match_data['away_coach'] = None
 
     def scrape_odds_1x2_regtime_page(
         self, 
         match_data: Dict,
         ) -> None:
-        
         odds_xpath = "//div[@class='ui-table__row']"
         bookmaker_xpath = "//a[@class='prematchLink']"
         odd_choice_xpath = "//div[@class='ui-table__header']"
         odds_list = self.driver.find_elements(By.XPATH, odds_xpath)
         bookmaker_list = self.driver.find_elements(By.XPATH, bookmaker_xpath)
         odd_choice_list = self.driver.find_elements(By.XPATH, odd_choice_xpath)
-        odds = []
-        bookmakers = []
 
         try:
             odd_choice = odd_choice_list[0].text.split('\n')[1:]
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: odds_list: {odds_list}, bookmaker_list: {bookmaker_list}, odd_choice_list: {odd_choice_list}')
-            # print(f'Error: odds_list: {odds_list}, bookmaker_list: {bookmaker_list}, odd_choice_list: {odd_choice_list}')
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: odds_list: {odds_list}, bookmaker_list: {bookmaker_list}, odd_choice_list: {odd_choice_list}')
+            odd_choice = None
 
+        odds = []
+        bookmakers = []
         for odd, bookmaker in zip(odds_list, bookmaker_list):
             bookmakers.append(bookmaker.get_attribute('title'))
             odds.append(dict(zip(odd_choice, map(float, odd.text.split('\n')))))
@@ -533,53 +537,54 @@ class FlashScoreScraper:
             home_team_last_match_list = onetoone_global_list[0].text.split('\n')[1:-1]
             away_team_last_match_list = onetoone_global_list[1].text.split('\n')[1:-1]
             last_duel_list = onetoone_global_list[2].text.split('\n')[1:-1]
-        except IndexError as e:
-            logging.info(e)
-            logging.info(f'Error: onetoone_global_list: {onetoone_global_list}')
-            # print(f'Error: onetoone_global_list: {onetoone_global_list}')
+            
+            if 'one_to_one' not in match_data:
+                match_data['one_to_one'] = {}
+            if 'global' not in match_data['one_to_one']:
+                match_data['one_to_one']['global'] = {}
+                    
+            match_data['one_to_one']['global']['home_team_last_matchs'] = [
+                {
+                    'date': home_team_last_match_list[7*i],
+                    'context': unidecode(home_team_last_match_list[7*i+1]).lower(),
+                    'home_team_name': unidecode(home_team_last_match_list[7*i+2]).lower(),
+                    'away_team_name': unidecode(home_team_last_match_list[7*i+3]).lower(),
+                    'home_goals': unidecode(home_team_last_match_list[7*i+4]).lower(),
+                    'away_goals': unidecode(home_team_last_match_list[7*i+5]).lower(),
+                    'result': unidecode(home_team_last_match_list[7*i+6]).lower(),
+                    }
+                for i in range(len(home_team_last_match_list)//7)
+                ]
 
-        if 'one_to_one' not in match_data:
-            match_data['one_to_one'] = {}
-        if 'global' not in match_data['one_to_one']:
-            match_data['one_to_one']['global'] = {}
-                
-        match_data['one_to_one']['global']['home_team_last_matchs'] = [
-            {
-                'date': home_team_last_match_list[7*i],
-                'context': unidecode(home_team_last_match_list[7*i+1]).lower(),
-                'home_team_name': unidecode(home_team_last_match_list[7*i+2]).lower(),
-                'away_team_name': unidecode(home_team_last_match_list[7*i+3]).lower(),
-                'home_goals': unidecode(home_team_last_match_list[7*i+4]).lower(),
-                'away_goals': unidecode(home_team_last_match_list[7*i+5]).lower(),
-                'result': unidecode(home_team_last_match_list[7*i+6]).lower(),
-                }
-            for i in range(len(home_team_last_match_list)//7)
-            ]
+            match_data['one_to_one']['global']['away_team_last_matchs'] = [
+                {
+                    'date': away_team_last_match_list[7*i],
+                    'context': unidecode(away_team_last_match_list[7*i+1]).lower(),
+                    'home_team_name': unidecode(away_team_last_match_list[7*i+2]).lower(),
+                    'away_team_name': unidecode(away_team_last_match_list[7*i+3]).lower(),
+                    'home_goals': unidecode(away_team_last_match_list[7*i+4]).lower(),
+                    'away_goals': unidecode(away_team_last_match_list[7*i+5]).lower(),
+                    'result': unidecode(away_team_last_match_list[7*i+6]).lower(),
+                    }
+                for i in range(len(away_team_last_match_list)//7)
+                ]
 
-        match_data['one_to_one']['global']['away_team_last_matchs'] = [
-            {
-                'date': away_team_last_match_list[7*i],
-                'context': unidecode(away_team_last_match_list[7*i+1]).lower(),
-                'home_team_name': unidecode(away_team_last_match_list[7*i+2]).lower(),
-                'away_team_name': unidecode(away_team_last_match_list[7*i+3]).lower(),
-                'home_goals': unidecode(away_team_last_match_list[7*i+4]).lower(),
-                'away_goals': unidecode(away_team_last_match_list[7*i+5]).lower(),
-                'result': unidecode(away_team_last_match_list[7*i+6]).lower(),
-                }
-            for i in range(len(away_team_last_match_list)//7)
-            ]
+            match_data['one_to_one']['global']['last_duel'] = [
+                {
+                    'date': last_duel_list[6*i],
+                    'context': unidecode(last_duel_list[6*i+1]).lower(),
+                    'home_team_name': unidecode(last_duel_list[6*i+2]).lower(),
+                    'away_team_name': unidecode(last_duel_list[6*i+3]).lower(),
+                    'home_goals': unidecode(last_duel_list[6*i+4]).lower(),
+                    'away_goals': unidecode(last_duel_list[6*i+5]).lower(),
+                    }
+                for i in range(len(last_duel_list)//6)
+                ]
 
-        match_data['one_to_one']['global']['last_duel'] = [
-            {
-                'date': last_duel_list[6*i],
-                'context': unidecode(last_duel_list[6*i+1]).lower(),
-                'home_team_name': unidecode(last_duel_list[6*i+2]).lower(),
-                'away_team_name': unidecode(last_duel_list[6*i+3]).lower(),
-                'home_goals': unidecode(last_duel_list[6*i+4]).lower(),
-                'away_goals': unidecode(last_duel_list[6*i+5]).lower(),
-                }
-            for i in range(len(last_duel_list)//6)
-            ]
+        except Exception as e:
+            logging.info(f'WARNING: {e}')
+            logging.info(f'WARNING: onetoone_global_list: {onetoone_global_list}')
+
 
     def export_to_yaml(
         self, 
@@ -600,7 +605,7 @@ class FlashScoreScraper:
 
 if __name__ == '__main__':
 
-    years = [(2017-i, 2018-i) for i in range(1)]
+    years = [(2011-i, 2012-i) for i in range(1)]
     url_leagues = ['https://www.flashscore.fr/football/france/ligue-1-'+ str(year[0]) + '-' + str(year[1]) + '/resultats/' for year in years]
     opts = Options()
     service = Service(executable_path=ChromeDriverManager().install())
