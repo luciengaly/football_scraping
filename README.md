@@ -1,8 +1,8 @@
-# soccer_analysis
+# Football Data Scraping
 
 ## Description
 
-Soccer league scraping
+Football data scraping from Flashscore.fr
 
 ## Quick start
 
@@ -11,12 +11,12 @@ Soccer league scraping
 <details open>
 <summary>Install</summary>
 
-Clone repo and install [requirements.txt](https://github.com/Kinglucho/soccer_analysis/tree/dev/requirements.txt) in a
+Clone repo and install [requirements.txt] in a
 [**Python>=3.7.0**](https://www.python.org/) environment.
 
 ```bash
-git clone https://github.com/Kinglucho/soccer_analysis.git  # Clone
-cd soccer_analysis # Change directory
+git clone https://github.com/luciengaly/football_scraping.git  # Clone
+cd football_scraping # Change directory
 pip install -r requirements.txt  # Install
 ```
 
